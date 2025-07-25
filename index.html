@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cooking Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Kanit', sans-serif; background-color: #FFF1F2; }
+        .game-container { max-width: 500px; margin: auto; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); overflow: hidden; }
+        .scene { display: none; padding: 1.5rem 2rem; }
+        .scene.active { display: block; animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .btn { background-color: #F472B6; color: white; padding: 0.75rem 1.5rem; border-radius: 9999px; font-weight: 500; transition: all 0.2s ease; box-shadow: 0 4px 14px rgba(244, 114, 182, 0.3); cursor: pointer; border: none; }
+        .btn:hover { background-color: #EC4899; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(244, 114, 182, 0.4); }
+        .btn:disabled { background-color: #fbcfe8; cursor: not-allowed; transform: none; box-shadow: none; }
+        /* NEW: Added a press-down effect for all buttons */
+        .btn:active { transform: translateY(0px) scale(0.97); box-shadow: 0 2px 8px rgba(244, 114, 182, 0.4); }
+        .choice-card { border: 2px solid #FBCFE8; border-radius: 16px; padding: 1rem; text-align: center; cursor: pointer; transition: all 0.3s ease; opacity: 0.5; }
+        .choice-card.selectable { opacity: 1; }
+        .choice-card.selected { border-color: #F472B6; transform: scale(1.05); box-shadow: 0 8px 20px rgba(236, 72, 153, 0.15); opacity: 1; background-color: #fdf2f8; }
+        .choice-card .emoji { font-size: 2.5rem; margin-bottom: 0.25rem; }
+        .minigame-area { position: relative; background-color: #FCE7F3; border-radius: 10px; border: 2px solid #FBCFE8; padding: 1rem; user-select: none; overflow: hidden; }
+        
+        /* Slicing Game */
+        #slicing-area { height: 250px; }
+        .slice-item { position: absolute; font-size: 2.5rem; cursor: pointer; animation: fall linear; }
+        @keyframes fall { from { top: -50px; transform: rotate(0deg); } to { top: 250px; transform: rotate(720deg); } }
+
+        /* Rhythm Game */
+        #rhythm-game-area { height: 120px; }
+        #rhythm-target-zone { position: absolute; left: 10%; top: 50%; transform: translateY(-50%); width: 60px; height: 60px; border: 3px dashed #f472b6; border-radius: 10px; background: rgba(255,255,255,0.2); }
+        .rhythm-arrow { position: absolute; top: 50%; transform: translateY(-50%); font-size: 2.5rem; animation: slide 1.5s linear forwards; }
+        @keyframes slide { from { right: -50px; } to { right: 100%; } }
+        .mobile-rhythm-btn { width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; font-size: 1.75rem; }
+
+        /* Plating Game */
+        #plating-area { height: 300px; background-color: #fff; }
+        .plate-target { position: absolute; opacity: 0.2; font-size: 3rem; pointer-events: none; }
+        .plate-draggable { position: absolute; font-size: 3rem; cursor: grab; }
+        .plate-draggable:active { cursor: grabbing; z-index: 10; }
+
+        /* Score Popup */
+        @keyframes score-popup { 0% { transform: translate(-50%, 0); opacity: 1; } 100% { transform: translate(-50%, -60px); opacity: 0; } }
+        .score-popup { position: absolute; top: 40%; left: 50%; font-size: 2rem; font-weight: bold; color: #f59e0b; animation: score-popup 1.5s ease-out forwards; pointer-events: none; z-index: 20; }
+        
+        /* NEW: Animation for the proposal modal */
+        @keyframes pop-in {
+            0% { opacity: 0; transform: scale(0.7); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        .pop-in { animation: pop-in 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+
+        /* NEW: Animation for final scene reveals */
+        .reveal-item {
+            opacity: 0;
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* .delay-1 { animation-delay: 0.2s; } */
+        .delay-2 { animation-delay: 0.6s; }
+        .delay-3 { animation-delay: 1.0s; }
+        .delay-4 { animation-delay: 1.4s; }
+
+        /* NEW: Blinking cursor for typewriter effect */
+        #final-message .cursor {
+            display: inline-block;
+            background-color: #6b7280;
+            width: 3px;
+            height: 1.2em;
+            margin-left: 4px;
+            animation: blink 8.0s infinite;
+            position: relative;
+            bottom: -3px;
+        }
+        @keyframes blink { 50% { background-color: transparent; } }
+
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div class="game-container">
+
+        <!-- Scene 1: Setup -->
+        <div id="scene-setup" class="scene active">
+            <h1 class="text-3xl font-bold text-center text-pink-500 mb-2">ถึง คนที่น่ารักที่สุดในใจพี่ 🌾</h1>
+            <p class="text-center text-gray-600 mb-6 text-lg">เกมนี้พี่ตั้งใจทำมาให้หนูเลยน้า</p>
+            <p class="text-center text-gray-500 mb-8">นี่คือเกมทำอาหาร (เหรอ ใช่รึเปล่า) ที่มีอะไรซ่อนอยู่เยอะแยะเลยนะ ลองดูซิว่าหนูจะทำได้ดีมั้ย อิ้อิ</p>
+            <div class="text-center mt-8">
+                <button id="start-btn" class="btn">เริ่มเล่นเลย!</button>
+                <button onclick="showFinalScene()" class="btn">ข้าม!</button>
+            </div>
+        </div>
+
+        <!-- Scene 2: Ingredient Selection -->
+        <div id="scene-ingredients" class="scene">
+            <h2 class="text-2xl font-bold text-center text-pink-500">ขั้นตอนที่ 1: เลือกวัตถุดิบ</h2>
+            <p id="ingredient-instruction" class="text-center text-gray-500 mb-4">เลือก <span class="font-bold">วัตถุดิบหลัก</span> 1 อย่าง</p>
+            <div id="ingredient-grid" class="grid grid-cols-2 gap-3"></div>
+            <div class="text-center mt-6"><button id="confirm-ingredients-btn" class="btn" disabled>ยืนยันวัตถุดิบ</button></div>
+        </div>
+        
+        <!-- Scene 3: Slicing Game -->
+        <div id="scene-slicing" class="scene">
+            <h2 class="text-2xl font-bold text-center text-pink-500">ขั้นตอนที่ 2: หยิบวัตถุดิบ</h2>
+            <p class="text-center text-gray-500 mb-4">จิ้มวัตถุดิบที่เลือกไว้! (ระวังระเบิดนะ 💣)</p>
+            <div id="slicing-area" class="minigame-area"></div>
+            <p class="text-center text-gray-600 mt-4">คะแนน: <span id="slicing-score">0</span></p>
+        </div>
+
+        <!-- Scene 4: Rhythm Game -->
+        <div id="scene-rhythm" class="scene">
+            <h2 class="text-2xl font-bold text-center text-pink-500">ขั้นตอนที่ 3: ปรุงรสเข้าจังหวะ</h2>
+            <p class="text-center text-gray-500 mb-4">กดปุ่มลูกศรให้ตรงกับจังหวะ!</p>
+            <div id="rhythm-game-area" class="minigame-area">
+                <div id="rhythm-target-zone"></div>
+            </div>
+            <div id="rhythm-controls" class="flex justify-center gap-4 mt-4">
+                <button data-key="ArrowLeft" class="btn mobile-rhythm-btn">←</button>
+                <button data-key="ArrowUp" class="btn mobile-rhythm-btn">↑</button>
+                <button data-key="ArrowDown" class="btn mobile-rhythm-btn">↓</button>
+                <button data-key="ArrowRight" class="btn mobile-rhythm-btn">→</button>
+            </div>
+            <p class="text-center text-gray-600 mt-4">คะแนน: <span id="rhythm-score">0</span> | Combo: <span id="rhythm-combo">0</span></p>
+        </div>
+
+        <!-- Scene 5: Plating Game -->
+        <div id="scene-plating" class="scene">
+            <h2 class="text-2xl font-bold text-center text-pink-500">ขั้นตอนที่ 4: จัดจานในฝัน</h2>
+            <p class="text-center text-gray-500 mb-4">ลากส่วนประกอบไปวางให้ตรงกับเงาที่สุด!</p>
+            <div id="plating-area" class="minigame-area"></div>
+            <div class="text-center mt-6"><button id="confirm-plating-btn" class="btn">จัดเสร็จแล้ว!</button></div>
+        </div>
+
+        <!-- Scene 6: Final -->
+        <div id="scene-final" class="scene text-center">
+            <div class="text-6xl mb-4 animate-bounce">💝</div>
+            <h2 class="text-2xl font-bold text-pink-500 mb-2 reveal-item delay-2">เมนู: <span id="final-dish-name"></span></h2>
+            <p class="text-lg text-amber-500 font-semibold mb-4 reveal-item delay-3">ระดับฝีมือ: <span id="final-chef-level"></span></p>
+            <div class="bg-pink-50 p-4 rounded-lg border border-pink-200 reveal-item delay-4">
+                <p class="text-gray-700 italic">"<span id="final-message"></span>"</p>
+                <p class="text-right mt-6 font-semibold text-pink-500">- พี่แพนของอ้วนเอ้งงง -</p>
+            </div>
+            <div class="text-center mt-8 space-x-2" style="opacity: 0;" id="final-buttons">
+                <!-- <button id="restart-btn" class="btn">เล่นอีกครั้ง</button> -->
+                <button id="proposal-btn" class="btn animate-pulse">นี่ๆ มีอะไรจะบอก ♡ ...</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADDITION: Proposal Modal -->
+    <div id="proposal-modal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center p-4" style="display: none; z-index: 100;">
+        <div id="proposal-content-wrapper" class="bg-no-repeat bg-center bg-cover bg-[url('https://th.bing.com/th/id/R.849ad1550b41f90dd4b410bf626caba0?rik=4qDkpDVgHrsPag&pid=ImgRaw&r=0')] rounded-2xl p-6 md:p-8 text-center max-w-md w-full">
+            <!-- Content will be injected here by JS -->
+        </div>
+    </div>
+
+
+    <script>
+        // --- GAME SETUP ---
+        const scenes = { setup: document.getElementById('scene-setup'), ingredients: document.getElementById('scene-ingredients'), slicing: document.getElementById('scene-slicing'), rhythm: document.getElementById('scene-rhythm'), plating: document.getElementById('scene-plating'), final: document.getElementById('scene-final') };
+        let gameState = {};
+        const ALL_INGREDIENTS = {
+            sugar: { emoji: '🍬', name: 'น้ำตาล', subtext: 'เพราะรอยยิ้มของหนูหวานที่สุด' },
+            chili: { emoji: '🌶️', name: 'พริก', subtext: 'เพราะหนูเป็นคนแซ่บๆ มีเสน่ห์' },
+            strawberry: { emoji: '🍓', name: 'สตรอว์เบอร์รี', subtext: 'เพราะแก้มของหนูน่ารักเหมือนสตรอว์เบอร์รี' },
+            chocolate: { emoji: '🍫', name: 'ช็อกโกแลต', subtext: 'เพราะหนูคือความสุขของพี่' },
+            cheese: { emoji: '🧀', name: 'ชีส', subtext: 'เพราะหนูทำให้พี่ยิ้มได้' },
+            honey: { emoji: '🍯', name: 'น้ำผึ้ง', subtext: 'เพราะทุกวันที่มีหนูช่างหอมหวาน' }
+        };
+
+        function resetGameState() {
+            gameState = { mainIngredient: null, secretIngredients: [], scores: { slicing: 0, rhythm: 0, plating: 0 }, totalScore: 0, chefLevel: '' };
+        }
+
+        function playSound(note, duration = '8n') {
+            return;
+            if (typeof Tone !== 'undefined' && Tone.context.state !== 'running') {
+                Tone.context.resume();
+            }
+            if (typeof Tone !== 'undefined') {
+                const synth = new Tone.Synth().toDestination();
+                synth.triggerAttackRelease(note, duration);
+            }
+        }
+
+        function switchScene(sceneName) {
+            Object.values(scenes).forEach(s => s.classList.remove('active'));
+            scenes[sceneName].classList.add('active');
+        }
+        
+        function showScorePopup(score, areaElement) {
+            const popup = document.createElement('div');
+            popup.className = 'score-popup';
+            popup.textContent = `+${score} คะแนน!`;
+            areaElement.appendChild(popup);
+            setTimeout(() => popup.remove(), 1500);
+        }
+
+        document.getElementById('start-btn').addEventListener('click', () => {
+             playSound('C4');
+             resetGameState();
+             setupIngredientSelection();
+             switchScene('ingredients');
+        });
+        
+        // --- SCENE 2: INGREDIENT SELECTION ---
+        const ingredientGrid = document.getElementById('ingredient-grid');
+        const ingredientInstruction = document.getElementById('ingredient-instruction');
+        const confirmIngredientsBtn = document.getElementById('confirm-ingredients-btn');
+
+        function setupIngredientSelection() {
+            ingredientGrid.innerHTML = '';
+            Object.entries(ALL_INGREDIENTS).forEach(([key, value]) => {
+                ingredientGrid.innerHTML += `
+                    <div class="choice-card selectable" data-ingredient="${key}">
+                        <div class="emoji">${value.emoji}</div>
+                        <h3 class="text-md font-semibold">${value.name}</h3>
+                    </div>`;
+            });
+            ingredientInstruction.innerHTML = 'เลือก <span class="font-bold">วัตถุดิบหลัก</span> 1 อย่าง';
+            confirmIngredientsBtn.disabled = true;
+            
+            ingredientGrid.querySelectorAll('.choice-card').forEach(card => card.addEventListener('click', handleIngredientClick));
+        }
+        
+        function handleIngredientClick(e) {
+            const selectedCard = e.currentTarget;
+            const ingredientKey = selectedCard.dataset.ingredient;
+
+            if (!gameState.mainIngredient) {
+                playSound('E4');
+                gameState.mainIngredient = ingredientKey;
+                selectedCard.classList.add('selected');
+                ingredientInstruction.innerHTML = 'เลือก <span class="font-bold">วัตถุดิบลับ</span> อีก 2 อย่าง';
+            } else if (gameState.secretIngredients.length < 2 && gameState.mainIngredient !== ingredientKey && !gameState.secretIngredients.includes(ingredientKey)) {
+                playSound('F#4');
+                gameState.secretIngredients.push(ingredientKey);
+                selectedCard.classList.add('selected');
+                if (gameState.secretIngredients.length === 2) {
+                    ingredientInstruction.textContent = 'เรียบร้อย! กดปุ่มเพื่อไปขั้นตอนต่อไป';
+                    confirmIngredientsBtn.disabled = false;
+                }
+            }
+        }
+        
+        confirmIngredientsBtn.addEventListener('click', () => {
+            playSound('G4');
+            startSlicingGame();
+        });
+
+        // --- SCENE 3: SLICING GAME ---
+        const slicingArea = document.getElementById('slicing-area');
+        const slicingScoreDisplay = document.getElementById('slicing-score');
+        let slicingInterval;
+
+        function startSlicingGame() {
+            switchScene('slicing');
+            gameState.scores.slicing = 0;
+            slicingScoreDisplay.textContent = '0';
+            slicingArea.innerHTML = '';
+
+            let gameTime = 15000;
+            slicingInterval = setInterval(() => {
+                const item = document.createElement('div');
+                item.className = 'slice-item';
+                
+                const isBomb = Math.random() > 0.7;
+                let randomIngredient;
+                if(isBomb) {
+                    randomIngredient = { emoji: '💣', key: 'bomb' };
+                } else {
+                    const keys = [gameState.mainIngredient, ...gameState.secretIngredients];
+                    const randomKey = keys[Math.floor(Math.random() * keys.length)];
+                    randomIngredient = { emoji: ALL_INGREDIENTS[randomKey].emoji, key: randomKey };
+                }
+                
+                item.textContent = randomIngredient.emoji;
+                item.dataset.key = randomIngredient.key;
+                item.style.left = `${Math.random() * 85}%`;
+                item.style.animationDuration = `${Math.random() * 1.5 + 2}s`;
+                
+                const handleClick = (e) => {
+                    e.preventDefault();
+                    if (e.currentTarget.dataset.key === 'bomb') {
+                        playSound('C3');
+                        gameState.scores.slicing -= 5;
+                        slicingArea.style.backgroundColor = '#fecaca';
+                        setTimeout(() => slicingArea.style.backgroundColor = '#FCE7F3', 200);
+                    } else {
+                        playSound('C#5', '16n');
+                        gameState.scores.slicing++;
+                    }
+                    slicingScoreDisplay.textContent = Math.max(0, gameState.scores.slicing);
+                    e.currentTarget.remove();
+                };
+
+                item.addEventListener('mousedown', handleClick);
+                item.addEventListener('touchstart', handleClick);
+                item.addEventListener('animationend', () => item.remove());
+                slicingArea.appendChild(item);
+
+            }, 600);
+            
+            setTimeout(() => {
+                clearInterval(slicingInterval);
+                showScorePopup(gameState.scores.slicing, slicingArea);
+                setTimeout(startRhythmGame, 1500);
+            }, gameTime);
+        }
+
+        // --- SCENE 4: RHYTHM GAME ---
+        const rhythmArea = document.getElementById('rhythm-game-area');
+        const rhythmTargetZone = document.getElementById('rhythm-target-zone');
+        const rhythmScoreDisplay = document.getElementById('rhythm-score');
+        const rhythmComboDisplay = document.getElementById('rhythm-combo');
+        let arrows = ['←', '↑', '↓', '→'];
+        let rhythmSequence = Array.from({length: 15}, () => arrows[Math.floor(Math.random() * arrows.length)]);
+        let rhythmInterval;
+        let combo = 0;
+
+        function startRhythmGame() {
+            switchScene('rhythm');
+            gameState.scores.rhythm = 0;
+            combo = 0;
+            rhythmScoreDisplay.textContent = '0';
+            rhythmComboDisplay.textContent = '0';
+            rhythmArea.innerHTML = '';
+            rhythmArea.appendChild(rhythmTargetZone);
+            
+            let i = 0;
+            rhythmInterval = setInterval(() => {
+                if (i >= rhythmSequence.length) {
+                    clearInterval(rhythmInterval);
+                    document.removeEventListener('keydown', handleRhythmEvent);
+                    showScorePopup(gameState.scores.rhythm, rhythmArea);
+                    setTimeout(startPlatingGame, 1500);
+                    return;
+                }
+                const arrow = document.createElement('div');
+                arrow.className = 'rhythm-arrow';
+                arrow.textContent = rhythmSequence[i];
+                rhythmArea.appendChild(arrow);
+                i++;
+                arrow.addEventListener('animationend', () => arrow.remove());
+            }, 800);
+            
+            document.addEventListener('keydown', handleRhythmEvent);
+        }
+        
+        function checkRhythmHit(key) {
+            const keyMap = { 'ArrowLeft': '←', 'ArrowUp': '↑', 'ArrowDown': '↓', 'ArrowRight': '→' };
+            const expectedArrow = keyMap[key];
+            if (!expectedArrow) return;
+
+            const targetRect = rhythmTargetZone.getBoundingClientRect();
+            const arrowsInZone = Array.from(rhythmArea.querySelectorAll('.rhythm-arrow')).filter(arrow => {
+                const arrowRect = arrow.getBoundingClientRect();
+                return arrowRect.left < targetRect.right && arrowRect.right > targetRect.left;
+            });
+
+            if (arrowsInZone.length > 0 && arrowsInZone[0].textContent === expectedArrow) {
+                playSound('E5', '16n');
+                combo++;
+                gameState.scores.rhythm += (1 + Math.floor(combo / 5));
+                arrowsInZone[0].remove();
+            } else {
+                playSound('C3');
+                combo = 0;
+            }
+            rhythmScoreDisplay.textContent = gameState.scores.rhythm;
+            rhythmComboDisplay.textContent = combo;
+        }
+
+        function handleRhythmEvent(e) { checkRhythmHit(e.key); }
+        document.querySelectorAll('#rhythm-controls button').forEach(button => {
+            button.addEventListener('click', (e) => checkRhythmHit(e.currentTarget.dataset.key));
+        });
+
+        // --- SCENE 5: PLATING GAME ---
+        const platingArea = document.getElementById('plating-area');
+        const confirmPlatingBtn = document.getElementById('confirm-plating-btn');
+        let targets = {};
+        
+        function startPlatingGame() {
+            switchScene('plating');
+            platingArea.innerHTML = '';
+            
+            const mainEmoji = ALL_INGREDIENTS[gameState.mainIngredient].emoji;
+            const secretEmoji1 = ALL_INGREDIENTS[gameState.secretIngredients[0]].emoji;
+            const secretEmoji2 = ALL_INGREDIENTS[gameState.secretIngredients[1]].emoji;
+
+            targets = {
+                main:    { x: Math.random() * 70 + 15, y: Math.random() * 60 + 20, emoji: mainEmoji },
+                secret1: { x: Math.random() * 70 + 15, y: Math.random() * 60 + 20, emoji: secretEmoji1 },
+                secret2: { x: Math.random() * 70 + 15, y: Math.random() * 60 + 20, emoji: secretEmoji2 }
+            };
+
+            Object.entries(targets).forEach(([key, val]) => {
+                const targetEl = document.createElement('div');
+                targetEl.className = 'plate-target';
+                targetEl.textContent = val.emoji;
+                targetEl.style.left = `${val.x}%`;
+                targetEl.style.top = `${val.y}%`;
+                platingArea.appendChild(targetEl);
+
+                const draggableEl = document.createElement('div');
+                draggableEl.className = 'plate-draggable';
+                draggableEl.id = `drag-${key}`;
+                draggableEl.textContent = val.emoji;
+                draggableEl.style.left = `${Math.random() * 80}%`;
+                draggableEl.style.top = `${Math.random() * 10}%`;
+                platingArea.appendChild(draggableEl);
+                makeDraggable(draggableEl);
+            });
+        }
+
+        function makeDraggable(el) {
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            const onDragStart = (e) => {
+                e.preventDefault();
+                pos3 = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+                pos4 = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+                document.onmouseup = onDragEnd;
+                document.onmousemove = onDragMove;
+                document.ontouchend = onDragEnd;
+                document.ontouchmove = onDragMove;
+            };
+            const onDragMove = (e) => {
+                e.preventDefault();
+                const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+                const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+                pos1 = pos3 - clientX;
+                pos2 = pos4 - clientY;
+                pos3 = clientX;
+                pos4 = clientY;
+                el.style.top = (el.offsetTop - pos2) + "px";
+                el.style.left = (el.offsetLeft - pos1) + "px";
+            };
+            const onDragEnd = () => {
+                document.onmouseup = null; document.onmousemove = null;
+                document.ontouchend = null; document.ontouchmove = null;
+            };
+            el.onmousedown = onDragStart;
+            el.ontouchstart = onDragStart;
+        }
+        
+        confirmPlatingBtn.addEventListener('click', () => {
+            let score = 0;
+            const areaRect = platingArea.getBoundingClientRect();
+            Object.keys(targets).forEach(key => {
+                const dragEl = document.getElementById(`drag-${key}`);
+                const dragRect = dragEl.getBoundingClientRect();
+                const targetPos = {
+                    x: areaRect.left + (areaRect.width * (targets[key].x / 100)),
+                    y: areaRect.top + (areaRect.height * (targets[key].y / 100))
+                };
+                const distance = Math.hypot(dragRect.left - targetPos.x, dragRect.top - targetPos.y);
+                score += Math.max(0, 10 - Math.floor(distance / 15));
+            });
+            gameState.scores.plating = score;
+            showScorePopup(score, platingArea);
+            setTimeout(showFinalScene, 1500);
+        });
+        
+        // --- NEW: Typewriter effect function ---
+        function typewriter(element, text, onComplete, speed = 45) {
+            element.innerHTML = ""; // Clear previous text
+            let i = 0;
+            const cursor = document.createElement('span');
+            cursor.className = 'cursor';
+            element.appendChild(cursor);
+
+            const interval = setInterval(() => {
+                if (i < text.length) {
+                    element.insertBefore(document.createTextNode(text.charAt(i)), cursor);
+                    i++;
+                } else {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        cursor.style.display = 'none'; // Hide cursor when done
+                        if (onComplete) onComplete();
+                    }, 0);
+                }
+            }, speed);
+        }
+
+        // function typewriterProposal(element, text, onComplete, speed = 40, pauseChars = ['#'], lineBreakChars = ['|'], stopChars = ['!']) {
+        //     element.innerHTML = ''; // เคลียร์ข้อความก่อนพิมพ์
+        //     let i = 0;
+        //     const cursor = document.createElement('span');
+        //     cursor.className = 'cursor';
+        //     element.appendChild(cursor);
+        //     function typeChar() {
+        //         if (i >= text.length) {
+        //             if (onComplete) onComplete();
+        //             return;
+        //         }
+
+        //         const char = text[i];
+
+        //         if (pauseChars.includes(char)) {
+        //             element.insertBefore(document.createTextNode(text.charAt(i)), cursor);
+        //             i++;
+        //             setTimeout(typeChar, 700); // ดีเลย์ 1 วิ เมื่อเจอสัญลักษณ์พัก
+        //         } else if (lineBreakChars.includes(char)) {
+        //             element.innerHTML += '<br><br>'; // ขึ้นบรรทัดใหม่
+        //             i++;
+        //             setTimeout(typeChar, speed);
+        //         } else if (stopChars.includes(char)) {
+        //             element.innerHTML += `<p class="reveal-item text-2xl font-bold text-pink-600 mb-8">Would you be my girl? 🩷</p>`;
+        //             i++;
+        //             setTimeout(typeChar, speed);
+        //         } else {
+        //             element.innerHTML += char;
+        //             i++;
+        //             setTimeout(typeChar, speed);
+        //         }
+        //     }
+
+        //     typeChar();
+        // }
+
+        function typewriterProposal(element, text, onComplete, speed = 40, pauseChars = ['#'], lineBreakChars = ['|'], stopChars = ['!']) {
+            element.innerHTML = ''; // เคลียร์ข้อความก่อนพิมพ์
+            let i = 0;
+
+            const cursor = document.createElement('span');
+            // cursor.className = 'cursor';
+            cursor.textContent = '✏️';
+            element.appendChild(cursor);
+
+            function typeChar() {
+                if (i >= text.length) {
+                    setTimeout(() => {
+                        cursor.style.display = 'none'; // ซ่อน cursor เมื่อจบ
+                        if (onComplete) onComplete();
+                    }, 0);
+                    return;
+                }
+
+                const char = text[i];
+
+                if (char === '♡') {
+                    cursor.style.display = 'none'; // ซ่อน cursor เมื่อพิมพ์ ♡
+                }
+
+                if (pauseChars.includes(char)) {
+                    i++;
+                    setTimeout(typeChar, 700); // พักเมื่อเจอ #
+                } else if (lineBreakChars.includes(char)) {
+                    const br1 = document.createElement('br');
+                    const br2 = document.createElement('br');
+                    element.insertBefore(br1, cursor);
+                    element.insertBefore(br2, cursor);
+                    i++;
+                    setTimeout(typeChar, speed);
+                } else if (stopChars.includes(char)) {
+                    
+                    const p = document.createElement('p');
+                    p.className = 'reveal-item text-2xl font-bold text-pink-600 mb-8';
+                    p.textContent = 'Would you be my girl? 🩷';
+                    element.insertBefore(p, cursor);
+                    i++;
+                    setTimeout(typeChar, speed);
+                } else {
+                    const textNode = document.createTextNode(char);
+                    element.insertBefore(textNode, cursor);
+                    i++;
+                    setTimeout(typeChar, speed);
+                }
+            }
+
+            typeChar();
+        }
+
+
+
+
+        // --- SCENE 6: FINAL (MODIFIED FOR ANIMATIONS) ---
+        function showFinalScene() {
+            playSound('C5');
+            // gameState.totalScore = gameState.scores.slicing + gameState.scores.rhythm + gameState.scores.plating;
+            gameState.totalScore = 0;
+
+            if (gameState.totalScore >= 70) gameState.chefLevel = "เชฟปรมาจารย์แห่งรัก";
+            else if (gameState.totalScore >= 50) gameState.chefLevel = "เชฟกระทะเหล็ก";
+            else if (gameState.totalScore >= 30) gameState.chefLevel = "เชฟมือโปร";
+            else gameState.chefLevel = "เชฟมือใหม่หัดรัก";
+
+            // const main = ALL_INGREDIENTS[gameState.mainIngredient].name;
+            // const secret1 = ALL_INGREDIENTS[gameState.secretIngredients[0]].name;
+            // const secret2 = ALL_INGREDIENTS[gameState.secretIngredients[1]].name;
+            const main = "น้ำตาล";
+            const secret1 = "ชีส";
+            const secret2 = "น้ำผึ้ง";
+            document.getElementById('final-dish-name').textContent = `${main}ผสาน ♡ กับ${secret1}และ${secret2}`;
+            document.getElementById('final-chef-level').textContent = gameState.chefLevel;
+
+            let levelMessage = "";
+            if (gameState.chefLevel === "เชฟปรมาจารย์แห่งรัก") levelMessage = "สุดยอด! หนูคือเชฟปรมาจารย์ด้านการทำอาหารให้คนที่รักจริงๆ ";
+            else if (gameState.chefLevel === "เชฟกระทะเหล็ก") levelMessage = "ฝีมือระดับเชฟกระทะเหล็กเลยนะเนี่ย ไม่ธรรมดาเลย! ";
+            else if (gameState.chefLevel === "เชฟมือโปร") levelMessage = "เก่งมาก! หนูคือเชฟมือโปรของพี่เลยนะ ";
+            else levelMessage = "น่ารักจัง ถึงจะเป็นเชฟมือใหม่แต่ก็พยายามเต็มที่เลยนะ ";
+            
+            const fullMessage = `${levelMessage} การได้เห็นหนูทำอาหารจานนี้ มันอร่อยกว่าเมนูไหนๆ ในโลกเลยนะ ให้เราได้เรียนรู้กันและกันแบบนี้ไปเรื่อยๆ น้าค้าบ รักน้าาา ♡#`;
+            
+            // Start typewriter after a delay to allow the message box to animate in
+            setTimeout(() => {
+                typewriterProposal(document.getElementById('final-message'), fullMessage, () => {
+                    // When typing is complete, reveal the buttons
+                    const finalButtons = document.getElementById('final-buttons');
+                    finalButtons.style.opacity = 1;
+                    finalButtons.classList.add('reveal-item');
+                });
+            }, 1800); // This delay should be >= the last reveal item's delay + duration
+
+            switchScene('final');
+        }
+
+        // --- FINAL SCENE AND PROPOSAL LOGIC (MODIFIED FOR ANIMATIONS) ---
+        const proposalBtn = document.getElementById('proposal-btn');
+        const proposalModal = document.getElementById('proposal-modal');
+        const proposalContentWrapper = document.getElementById('proposal-content-wrapper');
+
+        const originalProposalHTML = `
+            <h2 class="text-3xl font-bold text-pink-500 mb-4">อ้วนค้าบบบ...</h2>
+            <p id="proposal-typewriter" class="text-gray-700 text-lg mb-6"></p>
+            <div class="flex justify-center gap-4" style="opacity: 0;" id="proposal-buttons">
+                <button id="proposal-yes" class="btn bg-pink-500 hover:bg-pink-600 text-xl px-4 py-2">งื่อ ♡</button>
+                <button id="proposal-no" class="btn bg-pink-300 hover:bg-pink-400 text-pink-900 text-xl px-4 py-2">งื่อ ♡ เหมือนกัน ฮิฮิ</button>
+            </div>
+        `;
+
+        proposalBtn.addEventListener('click', () => {
+            playSound('G4', '4n');
+            proposalContentWrapper.innerHTML = originalProposalHTML;
+            proposalContentWrapper.className = 'bg-pink-50 rounded-3xl p-6 md:p-8 text-center max-w-md w-full pop-in';
+            proposalModal.style.display = 'flex';
+
+//             const text = `
+// จากคำว่า “คนสำคัญ”# เป็นอะไรมากกว่านั้น...# หนูจะว่าอะไรมั้ย ♡#|!`;
+                const text = `##หนูรู้มั้ย…# ว่าตั้งแต่หนูเข้ามาในชีวิตพี่# ทุกอย่างมันดูสดใสมากขึ้นเลยจริงๆ#|
+
+แล้วไม่ว่าในแต่ละวันจะเหนื่อยแค่ไหน# แค่ได้คุยกับหนู# พี่ก็หายเหนื่อยเลย# พี่ก็รู้สึกเหมือนได้พักใจแล้ว#|
+
+พี่อยากอยู่ข้างๆ หนูเสมอนะ#
+เวลาหนูมีความสุข# พี่ก็อยากหัวเราะไปด้วยกัน#
+เวลาที่หนูเหนื่อยหรือไม่สบายใจ# พี่ก็อยากเป็นคนที่หนูพอจะพึ่งพาได้#
+เป็นที่พักใจเล็กๆ สำหรับหนู#|
+
+ขอบคุณนะ# ที่เป็นตัวเองในแบบที่น่ารักแบบนี้# พี่ชอบที่หนูเป็นหนูแบบนี้แหละ#
+พี่ไม่รู้ว่าหนูจะรู้ตัวมั้ย...# แต่หนูคือคนที่พิเศษมากๆ# สำหรับพี่เลยนะ#|
+
+แล้วถ้าวันนี้# ตอนนี้# พี่จะขอให้เราก้าวไปอีกนิด#
+จากคำว่า “คนสำคัญ”# เป็นอะไรมากกว่านั้น...# หนูจะว่าอะไรมั้ย ♡##|!##`;
+
+            typewriterProposal(document.getElementById('proposal-typewriter'), text, () => {
+                const btns = document.getElementById('proposal-buttons');
+                btns.style.opacity = 1;
+                btns.classList.add('reveal-item');
+                document.getElementById('proposal-yes').addEventListener('click', handleProposalYes);
+                document.getElementById('proposal-no').addEventListener('click', handleProposalYes);
+            }, 40, ['#'], ['|'], ['!']); // Optional speed change
+        });
+
+        function handleProposalYes() {
+            playSound('C6', '1n');
+            proposalContentWrapper.innerHTML = `
+                <div class="text-6xl mb-4 animate-bounce">🩷</div>
+                <h2 class="text-3xl font-bold text-pink-500 mb-4">เย่! รักที่สุดเล้ย!</h2>
+                <p class="text-gray-700 text-lg mb-6">ขอบคุณที่ให้โอกาสพี่ได้ดูแลหนูน้า 🩷</p>
+                <button id="close-modal-btn" class="btn">♡</button>
+            `;
+            proposalContentWrapper.classList.add('pop-in');
+            document.getElementById('close-modal-btn').addEventListener('click', closeProposalModal);
+        }
+
+        function handleProposalNo() {
+            playSound('A3', '2n');
+            proposalContentWrapper.innerHTML = `
+                <div class="text-4xl mb-4">😢</div>
+                <h2 class="text-2xl font-bold text-gray-700 mb-4">ไม่เป็นไรครับ</h2>
+                <p class="text-gray-600 text-lg mb-6">พี่เข้าใจและเคารพการตัดสินใจของหนูนะ<br>พี่จะรอวันที่หนูพร้อม และจะอยู่ตรงนี้เสมอ</p>
+                <button id="close-modal-btn" class="btn">ปิด</button>
+            `;
+            proposalContentWrapper.classList.add('pop-in');
+            document.getElementById('close-modal-btn').addEventListener('click', closeProposalModal);
+        }
+
+        function closeProposalModal() {
+            proposalModal.style.display = 'none';
+        }
+
+        document.getElementById('restart-btn').addEventListener('click', () => {
+            playSound('C4');
+            resetGameState();
+            closeProposalModal();
+            // Reset final scene animations for next playthrough
+            document.getElementById('final-buttons').style.opacity = 0;
+            switchScene('setup');
+        });
+
+    </script>
+</body>
+</html>
+
+
