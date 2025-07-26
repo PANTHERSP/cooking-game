@@ -406,13 +406,16 @@
                 secret2: { x: Math.random() * 70 + 15, y: Math.random() * 60 + 20, emoji: secretEmoji2 }
             };
 
+
             Object.entries(targets).forEach(([key, val]) => {
                 const targetEl = document.createElement('div');
                 targetEl.className = 'plate-target';
                 targetEl.textContent = val.emoji;
-                targetEl.style.left = `${val.x}%`;
-                targetEl.style.top = `${val.y}%`;
+                // targetEl.style.left = `${val.x}%`;
+                // targetEl.style.top = `${val.y}%`;
                 platingArea.appendChild(targetEl);
+                val.el = targetEl;
+                val.origin = { x: val.x, y: val.y }; // ค่าเริ่มต้นที่นิ่ง
 
                 const draggableEl = document.createElement('div');
                 draggableEl.className = 'plate-draggable';
@@ -423,7 +426,27 @@
                 platingArea.appendChild(draggableEl);
                 makeDraggable(draggableEl);
             });
+
+            requestAnimationFrame(animateTargets);
         }
+
+        let startTime = null;
+        function animateTargets(time) {
+            if (!startTime) startTime = time;
+            const elapsed = time - startTime;
+
+            Object.values(targets).forEach((val, i) => {
+                const offsetX = Math.sin((elapsed + i * 100) / 1000) * 30; // 2% ความส่าย
+                const offsetY = Math.cos((elapsed + i * 100) / 1000) * 15;
+                const currentX = val.origin.x + offsetX;
+                const currentY = val.origin.y + offsetY;
+                val.el.style.left = `${currentX}%`;
+                val.el.style.top = `${currentY}%`;
+            });
+
+            requestAnimationFrame(animateTargets);
+        }
+
 
         function makeDraggable(el) {
             let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
