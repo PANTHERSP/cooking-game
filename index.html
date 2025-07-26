@@ -6,6 +6,8 @@
     <title>Cooking Game</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <link rel="icon" href="favicon.png" sizes="32x32" type="image/png">
+    <link rel="apple-touch-icon" href="favicon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -584,57 +586,57 @@
         // }
 
         function typewriterProposal(element, text, onComplete, speed = 40, pauseChars = ['#'], lineBreakChars = ['|'], stopChars = ['!']) {
-    element.innerHTML = ''; // เคลียร์ข้อความก่อนพิมพ์
-    const segmenter = new Intl.Segmenter('th', { granularity: 'grapheme' });
-    const graphemes = Array.from(segmenter.segment(text), s => s.segment);
-    let i = 0;
+            element.innerHTML = ''; // เคลียร์ข้อความก่อนพิมพ์
+            const segmenter = new Intl.Segmenter('th', { granularity: 'grapheme' });
+            const graphemes = Array.from(segmenter.segment(text), s => s.segment);
+            let i = 0;
 
-    const cursor = document.createElement('span');
-    cursor.textContent = '🖋️';
-    element.appendChild(cursor);
+            const cursor = document.createElement('span');
+            cursor.textContent = '🖋️';
+            element.appendChild(cursor);
 
-    function typeChar() {
-        if (i >= graphemes.length) {
-            setTimeout(() => {
-                cursor.style.display = 'none'; // ซ่อน cursor เมื่อจบ
-                if (onComplete) onComplete();
-            }, 0);
-            return;
+            function typeChar() {
+                if (i >= graphemes.length) {
+                    setTimeout(() => {
+                        cursor.style.display = 'none'; // ซ่อน cursor เมื่อจบ
+                        if (onComplete) onComplete();
+                    }, 0);
+                    return;
+                }
+
+                const char = graphemes[i];
+
+                if (char === '♡') {
+                    cursor.style.display = 'none';
+                }
+
+                if (pauseChars.includes(char)) {
+                    i++;
+                    setTimeout(typeChar, 700);
+                } else if (lineBreakChars.includes(char)) {
+                    const br1 = document.createElement('br');
+                    const br2 = document.createElement('br');
+                    element.insertBefore(br1, cursor);
+                    element.insertBefore(br2, cursor);
+                    i++;
+                    setTimeout(typeChar, speed);
+                } else if (stopChars.includes(char)) {
+                    const p = document.createElement('p');
+                    p.className = 'reveal-item text-2xl font-bold text-pink-600 mb-8';
+                    p.textContent = 'Would you be my girl? 🩷';
+                    element.insertBefore(p, cursor);
+                    i++;
+                    setTimeout(typeChar, speed);
+                } else {
+                    const textNode = document.createTextNode(char);
+                    element.insertBefore(textNode, cursor);
+                    i++;
+                    setTimeout(typeChar, speed);
+                }
+            }
+
+            typeChar();
         }
-
-        const char = graphemes[i];
-
-        if (char === '♡') {
-            cursor.style.display = 'none';
-        }
-
-        if (pauseChars.includes(char)) {
-            i++;
-            setTimeout(typeChar, 700);
-        } else if (lineBreakChars.includes(char)) {
-            const br1 = document.createElement('br');
-            const br2 = document.createElement('br');
-            element.insertBefore(br1, cursor);
-            element.insertBefore(br2, cursor);
-            i++;
-            setTimeout(typeChar, speed);
-        } else if (stopChars.includes(char)) {
-            const p = document.createElement('p');
-            p.className = 'reveal-item text-2xl font-bold text-pink-600 mb-8';
-            p.textContent = 'Would you be my girl? 🩷';
-            element.insertBefore(p, cursor);
-            i++;
-            setTimeout(typeChar, speed);
-        } else {
-            const textNode = document.createTextNode(char);
-            element.insertBefore(textNode, cursor);
-            i++;
-            setTimeout(typeChar, speed);
-        }
-    }
-
-    typeChar();
-}
 
 
 
