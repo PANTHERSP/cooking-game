@@ -585,7 +585,7 @@
         //     typeChar();
         // }
 
-        function typewriterProposal(element, text, onComplete, speed = 40, pauseChars = ['#'], lineBreakChars = ['|'], stopChars = ['!']) {
+        function typewriterProposal(element, text, onComplete, speed = 40, pauseChars = ['#'], lineBreakChars = ['|'], stopChars = ['&']) {
             element.innerHTML = ''; // เคลียร์ข้อความก่อนพิมพ์
             const segmenter = new Intl.Segmenter('th', { granularity: 'grapheme' });
             const graphemes = Array.from(segmenter.segment(text), s => s.segment);
@@ -718,7 +718,7 @@
 พี่ไม่รู้ว่าหนูจะรู้ตัวมั้ย# แต่หนูคือคนที่พิเศษมากๆ# สำหรับพี่เลยนะ#|
 
 แล้วถ้าวันนี้# ตอนนี้# พี่จะขอให้เราก้าวไปอีกนิด#
-จากคำว่า “คนสำคัญ”# เป็นอะไรมากกว่านั้น...# หนูจะว่าอะไรมั้ย ♡##|!##`;
+จากคำว่า “คนสำคัญ”# เป็นอะไรมากกว่านั้น...# หนูจะว่าอะไรมั้ย ♡##|&##`;
 
             typewriterProposal(document.getElementById('proposal-typewriter'), text, () => {
                 const btns = document.getElementById('proposal-buttons');
@@ -726,7 +726,7 @@
                 btns.classList.add('reveal-item');
                 document.getElementById('proposal-yes').addEventListener('click', handleProposalYes);
                 document.getElementById('proposal-no').addEventListener('click', handleProposalYes);
-            }, 40, ['#'], ['|'], ['!']); // Optional speed change
+            }, 40, ['#'], ['|'], ['&']); // Optional speed change
         });
 
         function handleProposalYes() {
