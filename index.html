@@ -353,7 +353,7 @@
                 rhythmArea.appendChild(arrow);
                 i++;
                 arrow.addEventListener('animationend', () => arrow.remove());
-            }, 800);
+            }, 600);
             
             document.addEventListener('keydown', handleRhythmEvent);
         }
@@ -663,8 +663,8 @@
             document.getElementById('final-chef-level').textContent = gameState.chefLevel;
 
             let levelMessage = "";
-            if (gameState.chefLevel === "เชฟปรมาจารย์แห่งรัก") levelMessage = "สุดยอด! หนูคือเชฟปรมาจารย์ด้านการทำอาหารให้คนที่รักจริงๆ ";
-            else if (gameState.chefLevel === "เชฟกระทะเหล็ก") levelMessage = "ฝีมือระดับเชฟกระทะเหล็กเลยนะเนี่ย ไม่ธรรมดาเลย! ";
+            if (gameState.chefLevel === "เชฟปรมาจารย์แห่งรัก") levelMessage = "สุดยอด! หนูคือเชฟปรมาจารย์ด้านการทำอาหารจริงๆ ";
+            else if (gameState.chefLevel === "เชฟกระทะเหล็ก") levelMessage = "ฝีมือระดับเชฟกระทะเหล็กเลยนะเนี่ย! ";
             else if (gameState.chefLevel === "เชฟมือโปร") levelMessage = "เก่งมาก! หนูคือเชฟมือโปรของพี่เลยนะ ";
             else levelMessage = "น่ารักจัง ถึงจะเป็นเชฟมือใหม่แต่ก็พยายามเต็มที่เลยนะ ";
             
