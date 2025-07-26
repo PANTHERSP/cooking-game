@@ -275,7 +275,7 @@
                 const item = document.createElement('div');
                 item.className = 'slice-item';
                 
-                const isBomb = Math.random() > 0.7;
+                const isBomb = Math.random() > 0.6;
                 let randomIngredient;
                 if(isBomb) {
                     randomIngredient = { emoji: '💣', key: 'bomb' };
@@ -310,7 +310,7 @@
                 item.addEventListener('animationend', () => item.remove());
                 slicingArea.appendChild(item);
 
-            }, 600);
+            }, 300);
             
             setTimeout(() => {
                 clearInterval(slicingInterval);
