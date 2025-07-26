@@ -98,7 +98,7 @@
             <p class="text-center text-gray-500 mb-8">นี่คือเกมทำอาหาร (เหรอ ใช่รึเปล่า) ที่มีอะไรซ่อนอยู่เยอะแยะเลยนะ ลองดูซิว่าหนูจะทำได้ดีมั้ย อิ้อิ</p>
             <div class="text-center mt-8">
                 <button id="start-btn" class="btn">เริ่มเล่นเลย!</button>
-                <button onclick="showFinalScene()" class="btn">ข้าม!</button>
+                <!-- <button onclick="showFinalScene()" class="btn">ข้าม!</button> -->
             </div>
         </div>
 
@@ -645,20 +645,20 @@
         // --- SCENE 6: FINAL (MODIFIED FOR ANIMATIONS) ---
         function showFinalScene() {
             playSound('C5');
-            // gameState.totalScore = gameState.scores.slicing + gameState.scores.rhythm + gameState.scores.plating;
-            gameState.totalScore = 0;
+            gameState.totalScore = gameState.scores.slicing + gameState.scores.rhythm + gameState.scores.plating;
+            // gameState.totalScore = 0;
 
             if (gameState.totalScore >= 70) gameState.chefLevel = "เชฟปรมาจารย์แห่งรัก";
             else if (gameState.totalScore >= 50) gameState.chefLevel = "เชฟกระทะเหล็ก";
             else if (gameState.totalScore >= 30) gameState.chefLevel = "เชฟมือโปร";
             else gameState.chefLevel = "เชฟมือใหม่หัดรัก";
 
-            // const main = ALL_INGREDIENTS[gameState.mainIngredient].name;
-            // const secret1 = ALL_INGREDIENTS[gameState.secretIngredients[0]].name;
-            // const secret2 = ALL_INGREDIENTS[gameState.secretIngredients[1]].name;
-            const main = "น้ำตาล";
-            const secret1 = "ชีส";
-            const secret2 = "น้ำผึ้ง";
+            const main = ALL_INGREDIENTS[gameState.mainIngredient].name;
+            const secret1 = ALL_INGREDIENTS[gameState.secretIngredients[0]].name;
+            const secret2 = ALL_INGREDIENTS[gameState.secretIngredients[1]].name;
+            // const main = "น้ำตาล";
+            // const secret1 = "ชีส";
+            // const secret2 = "น้ำผึ้ง";
             document.getElementById('final-dish-name').textContent = `${main}ผสาน ♡ กับ${secret1}และ${secret2}`;
             document.getElementById('final-chef-level').textContent = gameState.chefLevel;
 
