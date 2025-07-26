@@ -529,59 +529,113 @@
         //     typeChar();
         // }
 
-        function typewriterProposal(element, text, onComplete, speed = 40, pauseChars = ['#'], lineBreakChars = ['|'], stopChars = ['!']) {
-            element.innerHTML = ''; // เคลียร์ข้อความก่อนพิมพ์
-            let i = 0;
+        // function typewriterProposal(element, text, onComplete, speed = 40, pauseChars = ['#'], lineBreakChars = ['|'], stopChars = ['!']) {
+        //     element.innerHTML = ''; // เคลียร์ข้อความก่อนพิมพ์
+        //     let i = 0;
 
-            const cursor = document.createElement('span');
-            // cursor.className = 'cursor';
-            // cursor.textContent = '✏️';
-            cursor.textContent = '🖋️';
-            element.appendChild(cursor);
+        //     const cursor = document.createElement('span');
+        //     // cursor.className = 'cursor';
+        //     // cursor.textContent = '✏️';
+        //     cursor.textContent = '🖋️';
+        //     element.appendChild(cursor);
 
-            function typeChar() {
-                if (i >= text.length) {
-                    setTimeout(() => {
-                        cursor.style.display = 'none'; // ซ่อน cursor เมื่อจบ
-                        if (onComplete) onComplete();
-                    }, 0);
-                    return;
-                }
+        //     function typeChar() {
+        //         if (i >= text.length) {
+        //             setTimeout(() => {
+        //                 cursor.style.display = 'none'; // ซ่อน cursor เมื่อจบ
+        //                 if (onComplete) onComplete();
+        //             }, 0);
+        //             return;
+        //         }
 
-                const char = text[i];
+        //         const char = text[i];
 
-                if (char === '♡') {
-                    cursor.style.display = 'none'; // ซ่อน cursor เมื่อพิมพ์ ♡
-                }
+        //         if (char === '♡') {
+        //             cursor.style.display = 'none'; // ซ่อน cursor เมื่อพิมพ์ ♡
+        //         }
 
-                if (pauseChars.includes(char)) {
-                    i++;
-                    setTimeout(typeChar, 700); // พักเมื่อเจอ #
-                } else if (lineBreakChars.includes(char)) {
-                    const br1 = document.createElement('br');
-                    const br2 = document.createElement('br');
-                    element.insertBefore(br1, cursor);
-                    element.insertBefore(br2, cursor);
-                    i++;
-                    setTimeout(typeChar, speed);
-                } else if (stopChars.includes(char)) {
+        //         if (pauseChars.includes(char)) {
+        //             i++;
+        //             setTimeout(typeChar, 700); // พักเมื่อเจอ #
+        //         } else if (lineBreakChars.includes(char)) {
+        //             const br1 = document.createElement('br');
+        //             const br2 = document.createElement('br');
+        //             element.insertBefore(br1, cursor);
+        //             element.insertBefore(br2, cursor);
+        //             i++;
+        //             setTimeout(typeChar, speed);
+        //         } else if (stopChars.includes(char)) {
                     
-                    const p = document.createElement('p');
-                    p.className = 'reveal-item text-2xl font-bold text-pink-600 mb-8';
-                    p.textContent = 'Would you be my girl? 🩷';
-                    element.insertBefore(p, cursor);
-                    i++;
-                    setTimeout(typeChar, speed);
-                } else {
-                    const textNode = document.createTextNode(char);
-                    element.insertBefore(textNode, cursor);
-                    i++;
-                    setTimeout(typeChar, speed);
-                }
-            }
+        //             const p = document.createElement('p');
+        //             p.className = 'reveal-item text-2xl font-bold text-pink-600 mb-8';
+        //             p.textContent = 'Would you be my girl? 🩷';
+        //             element.insertBefore(p, cursor);
+        //             i++;
+        //             setTimeout(typeChar, speed);
+        //         } else {
+        //             const textNode = document.createTextNode(char);
+        //             element.insertBefore(textNode, cursor);
+        //             i++;
+        //             setTimeout(typeChar, speed);
+        //         }
+        //     }
 
-            typeChar();
+        //     typeChar();
+        // }
+
+        function typewriterProposal(element, text, onComplete, speed = 40, pauseChars = ['#'], lineBreakChars = ['|'], stopChars = ['!']) {
+    element.innerHTML = ''; // เคลียร์ข้อความก่อนพิมพ์
+    const segmenter = new Intl.Segmenter('th', { granularity: 'grapheme' });
+    const graphemes = Array.from(segmenter.segment(text), s => s.segment);
+    let i = 0;
+
+    const cursor = document.createElement('span');
+    cursor.textContent = '🖋️';
+    element.appendChild(cursor);
+
+    function typeChar() {
+        if (i >= graphemes.length) {
+            setTimeout(() => {
+                cursor.style.display = 'none'; // ซ่อน cursor เมื่อจบ
+                if (onComplete) onComplete();
+            }, 0);
+            return;
         }
+
+        const char = graphemes[i];
+
+        if (char === '♡') {
+            cursor.style.display = 'none';
+        }
+
+        if (pauseChars.includes(char)) {
+            i++;
+            setTimeout(typeChar, 700);
+        } else if (lineBreakChars.includes(char)) {
+            const br1 = document.createElement('br');
+            const br2 = document.createElement('br');
+            element.insertBefore(br1, cursor);
+            element.insertBefore(br2, cursor);
+            i++;
+            setTimeout(typeChar, speed);
+        } else if (stopChars.includes(char)) {
+            const p = document.createElement('p');
+            p.className = 'reveal-item text-2xl font-bold text-pink-600 mb-8';
+            p.textContent = 'Would you be my girl? 🩷';
+            element.insertBefore(p, cursor);
+            i++;
+            setTimeout(typeChar, speed);
+        } else {
+            const textNode = document.createTextNode(char);
+            element.insertBefore(textNode, cursor);
+            i++;
+            setTimeout(typeChar, speed);
+        }
+    }
+
+    typeChar();
+}
+
 
 
 
