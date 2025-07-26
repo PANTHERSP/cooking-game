@@ -294,14 +294,14 @@
                     e.preventDefault();
                     if (e.currentTarget.dataset.key === 'bomb') {
                         playSound('C3');
-                        gameState.scores.slicing -= 5;
+                        gameState.scores.slicing = Math.max(0, gameState.scores.slicing - 5);
                         slicingArea.style.backgroundColor = '#fecaca';
                         setTimeout(() => slicingArea.style.backgroundColor = '#FCE7F3', 200);
                     } else {
                         playSound('C#5', '16n');
                         gameState.scores.slicing++;
                     }
-                    slicingScoreDisplay.textContent = Math.max(0, gameState.scores.slicing);
+                    slicingScoreDisplay.textContent = gameState.scores.slicing;
                     e.currentTarget.remove();
                 };
 
